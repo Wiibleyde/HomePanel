@@ -2,75 +2,49 @@ import json
 import os
 
 class PageObject:
-    def __init__(self,name,link):
+    def __init__(self,name,link,logo):
         self.name = name
         self.link = link
+        self.logo = logo
 
-    def __str__(self):
-        return "PageObject: " + self.name + " " + self.link
-
-    def __getattribute__(self, name: str):
-        return object.__getattribute__(self, name)
+    def __getattribute__(self, __name: str):
+        return super().__getattribute__(__name)
     
-    def __setattr__(self, name: str, value):
-        object.__setattr__(self, name, value)
+    def __setattr__(self, __name: str, value):
+        super().__setattr__(__name, value)
 
 class PageService:
-    def __init__(self,filename):
-        self.filename = "data/" + filename
-        if not os.path.exists("data"):
-            os.makedirs("data")
-        if not os.path.exists(self.filename):
-            with open(self.filename, 'w') as f:
-                json.dump([], f)
-    
-    def addPage(self,name,link):
-        with open(self.filename, 'r') as f:
-            data = json.load(f)
-        data.append({"name":name,"link":link})
-        with open(self.filename, 'w') as f:
-            json.dump(data, f)
-    
-    def getPages(self):
-        with open(self.filename, 'r') as f:
-            data = json.load(f)
-        pages = []
-        for page in data:
-            pages.append(PageObject(page["name"],page["link"]))
-        return pages
-    
-    def getPage(self,link):
-        with open(self.filename, 'r') as f:
-            data = json.load(f)
-        for page in data:
-            if page["link"] == link:
-                return PageObject(page["name"],page["link"])
+    def __init__(self):
+        self.__pageList = []
+        self.__loadPageList()
+
+    def __loadPageList(self):
+        with open(os.path.join(os.path.dirname(__file__),"pageList.json"),'r',encoding='utf-8') as f:
+            pageList = json.load(f)
+            for page in pageList:
+                self.__pageList.append(PageObject(page['name'],page['link'],page['logo']))
+
+    def getPageList(self):
+        return self.__pageList
+
+    def getPage(self,name):
+        for page in self.__pageList:
+            if page.name == name:
+                return page
         return None
-    
-    def deletePage(self,link):
-        with open(self.filename, 'r') as f:
-            data = json.load(f)
-        for page in data:
-            if page["link"] == link:
-                data.remove(page)
-                break
-        with open(self.filename, 'w') as f:
-            json.dump(data, f)
-    
-    def updatePage(self,link,name):
-        with open(self.filename, 'r') as f:
-            data = json.load(f)
-        for page in data:
-            if page["link"] == link:
-                page["name"] = name
-                break
-        with open(self.filename, 'w') as f:
-            json.dump(data, f)
-    
-    def testIfLinkExist(self,link):
-        with open(self.filename, 'r') as f:
-            data = json.load(f)
-        for page in data:
-            if page["link"] == link:
+
+    def addPage(self,page):
+        self.__pageList.append(page)
+        self.__savePageList()
+
+    def deletePage(self,name):
+        for page in self.__pageList:
+            if page.name == name:
+                self.__pageList.remove(page)
+                self.__savePageList()
                 return True
         return False
+
+    def __savePageList(self):
+        with open(os.path.join(os.path.dirname(__file__),"pageList.json"),'w',encoding='utf-8') as f:
+            json.dump(self.__pageList,f,ensure_ascii=False,indent=4)
